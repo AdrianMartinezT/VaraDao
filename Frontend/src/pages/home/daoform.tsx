@@ -236,7 +236,7 @@ function SailsComponent() {
           <Text fontSize="xs" fontWeight="bold" mt={1} cursor="pointer">
             &gt;&gt;&gt;
           </Text>
-        </Box><Proposals/>
+        </Box>
       </Box>
 
       {/* SECCIÓN CENTRAL */}
@@ -297,30 +297,8 @@ function SailsComponent() {
           </Heading>
           {/* Ejemplo de "última propuesta" o alguna data estática */}
           <Box>
-            <Text fontWeight="bold">Título</Text>
-            <Text mb={2}>Propuesta de Bountie para Workshop</Text>
-
-            <Text fontWeight="bold">Descripción</Text>
-            <Text mb={2}>
-              El workshop se desarrollará en la universidad latina de MX
-            </Text>
-
-            <Text fontWeight="bold">Objetivos</Text>
-            <Text mb={2}>
-              Onboardear a los chicos de tecnología para aplicar herramientas
-              Web3
-            </Text>
-
-            <Text fontWeight="bold">Plan</Text>
-            <Text mb={2}>Tener un temario de 2 hrs</Text>
-
-            <Text fontWeight="bold">Budget $</Text>
-            <Text mb={2}>600</Text>
-
-            <Text fontWeight="bold">Impact</Text>
-            <Text mb={2}>
-              30 nuevos universitarios onboardeados y posibles nuevos proyectos
-            </Text>
+            <Proposals/>
+          
 
             <Button
               mt={3}
@@ -334,6 +312,8 @@ function SailsComponent() {
               Submit new proposal
             </Button>
           </Box>
+
+          
         </Box>
       </Box>
 
