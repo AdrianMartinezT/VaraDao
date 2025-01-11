@@ -1,0 +1,41 @@
+type Events = enum {
+  ProposalSubmitted,
+};
+
+type IoState = struct {
+  admins: vec actor_id,
+  all_users: vec User,
+  register: vec struct { actor_id, Proposal },
+};
+
+type User = struct {
+  wallet: actor_id,
+  name: str,
+  role: str,
+  gender: str,
+  country: str,
+};
+
+type Proposal = struct {
+  title: str,
+  description: str,
+  objectives: str,
+  plan: str,
+  budget: u64,
+  impact: str,
+};
+
+constructor {
+  New : ();
+};
+
+service Service {
+  Login : (wallet: actor_id) -> null;
+  RegisterUser : (name: str, role: str, gender: str, country: str) -> null;
+  SubmitProposal : (wallet: actor_id, title: str, description: str, objectives: str, plan: str, budget: u64, impact: str) -> Events;
+  query Query : () -> IoState;
+  query QueryAdmins : () -> vec actor_id;
+  query QueryAllProposals : () -> vec struct { actor_id, Proposal };
+  query QueryAllUsers : () -> vec User;
+};
+
