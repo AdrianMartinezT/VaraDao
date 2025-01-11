@@ -7,6 +7,9 @@ import {
   Text,
   Button,
   useToast,
+  Divider,
+  HStack,
+  Avatar,
 } from "@chakra-ui/react";
 import { useSailsCalls } from "@/app/hooks";
 import { CONTRACT_DATA } from "@/app/consts";
@@ -42,14 +45,12 @@ function Proposals() {
     }
 
     try {
-     
       const response = await sails.query(
         `${CONTRACT_DATA.programId}/Service/QueryAllProposals`
-    );
+      );
 
-
-    console.log(response)
-    setProposals(response);
+      console.log(response);
+      setProposals(response);
       toast({
         title: "Proposals loaded successfully!",
         status: "success",
@@ -63,20 +64,14 @@ function Proposals() {
   return (
     <Center>
       <VStack spacing={6}>
-        <Heading
-          textColor="#00ffc4"
-          fontSize="4xl"
-          textShadow="2px 2px 0 #00bfa1, 4px 4px 0 #008f7d"
-        >
-          Proposals
-        </Heading>
+       
         <Box
           width="100%"
           maxW="800px"
           padding={6}
           boxShadow="lg"
           borderRadius="md"
-          bg="gray.50"
+          bg="#1A1E1B"  // Fondo oscuro
         >
           {proposals.length ? (
             proposals.map((proposal, index) => (
@@ -86,27 +81,48 @@ function Proposals() {
                 mb={4}
                 boxShadow="md"
                 borderRadius="md"
-                bg="white"
+                bg="#2D3333"  // Fondo oscuro para cada propuesta
               >
-                {/* <Text fontWeight="bold">Proposed by: {proposal.actor_id}</Text> */}
-                {/* <Text fontSize={10} color={"black"} fontWeight="bold">Proposed by: {proposal[0]}</Text> */}
-                <Text fontSize={10} color={"black"} fontWeight="bold">Title: {proposal[1].title}</Text>
-                <Text fontSize={10} color={"black"}>Description: {proposal[1].description}</Text>
-                <Text fontSize={10} color={"black"}>Objectives: {proposal[1].objectives}</Text>
-                <Text fontSize={10} color={"black"}>Plan: {proposal[1].plan}</Text>
-                <Text fontSize={10} color={"black"}>Budget: {proposal[1].budget}</Text>
-                <Text fontSize={10} color={"black"}>Impact: {proposal[1].impact}</Text>
+                <HStack spacing={4} align="center">
+                  <Avatar size="sm" name="User Avatar" src="https://bit.ly/broken-link" />
+                  <Box>
+                    <Text fontSize="xl" fontWeight="bold" color="#00ffc4">
+                      {proposal[1].title}
+                    </Text>
+                    <Text fontSize="sm" opacity={0.8} color="white">
+                      Proposed by: {proposal[0]}
+                    </Text>
+                  </Box>
+                </HStack>
+                <Divider my={2} />
+                <Text fontSize="sm" color="white" fontWeight="bold">
+                  Description:
+                </Text>
+                <Text fontSize="sm" color="white">{proposal[1].description}</Text>
 
-                {/* <Text fontWeight="bold">Title: {proposal.Proposal.title}</Text>
-                <Text>Description: {proposal.Proposal.description}</Text>
-                <Text>Objectives: {proposal.Proposal.objectives}</Text>
-                <Text>Plan: {proposal.Proposal.plan}</Text>
-                <Text>Budget: {proposal.Proposal.budget}</Text>
-                <Text>Impact: {proposal.Proposal.impact}</Text> */}
+                <Text fontSize="sm" color="white" fontWeight="bold">
+                  Objectives:
+                </Text>
+                <Text fontSize="sm" color="white">{proposal[1].objectives}</Text>
+
+                <Text fontSize="sm" color="white" fontWeight="bold">
+                  Plan:
+                </Text>
+                <Text fontSize="sm" color="white">{proposal[1].plan}</Text>
+
+                <Text fontSize="sm" color="white" fontWeight="bold">
+                  Budget:
+                </Text>
+                <Text fontSize="sm" color="white">{proposal[1].budget}</Text>
+
+                <Text fontSize="sm" color="white" fontWeight="bold">
+                  Impact:
+                </Text>
+                <Text fontSize="sm" color="white">{proposal[1].impact}</Text>
               </Box>
             ))
           ) : (
-            <Text>No proposals found.</Text>
+            <Text color="white">No proposals found.</Text>
           )}
         </Box>
         <Button
