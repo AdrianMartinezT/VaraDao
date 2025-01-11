@@ -3,10 +3,13 @@ import { Home } from "./home";
 import { Landing } from "./Landing";
 import { NotFound } from "./not-found";
 
+import path from "path";
+
 const routes = [
   { path: '/', Page: Landing },
   { path: '/home', Page: Home },
-  { path: '/*', Page: NotFound }
+  { path: '/*', Page: NotFound },
+  
 ];
 
 function Routing() {

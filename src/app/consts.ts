@@ -26,60 +26,46 @@ export const sponsorName = 'Alice';
 export const sponsorMnemonic = 'bottom drive obey lake curtain smoke basket hold race lonely fit walk';
 
 export const CONTRACT_DATA: ContractSails = {
-  programId: '0x0f986f5a85b7c1070a760661e55bce0bf70cbc0e0713f82d01c0d878914085d7',
+  programId: '0x6867f02724caa4f851d274d6e4d73f6b8bca3392c45b3863910f3770a1e24ae7',
   idl: `
-    type KeyringData = struct {
-      address: str,
-      encoded: str,
-    };
+    type Events = enum {
+  ProposalSubmitted,
+};
 
-    type KeyringEvent = enum {
-      KeyringAccountSet,
-      Error: KeyringError,
-    };
+type IoState = struct {
+  admins: vec actor_id,
+  all_users: vec User,
+  register: vec struct { actor_id, Proposal },
+};
 
-    type KeyringError = enum {
-      KeyringAddressAlreadyEsists,
-      UserAddressAlreadyExists,
-      UserCodedNameAlreadyExists,
-      UserDoesNotHasKeyringAccount,
-      KeyringAccountAlreadyExists,
-      SessionHasInvalidCredentials,
-      UserAndKeyringAddressAreTheSame,
-    };
+type User = struct {
+  wallet: actor_id,
+  name: str,
+  role: str,
+  gender: str,
+  country: str,
+};
 
-    type KeyringQueryEvent = enum {
-      LastWhoCall: actor_id,
-      SignlessAccountAddress: opt actor_id,
-      SignlessAccountData: opt KeyringData,
-    };
+type Proposal = struct {
+  title: str,
+  description: str,
+  objectives: str,
+  plan: str,
+  budget: u64,
+  impact: str,
+};
 
-    type PingEvent = enum {
-      Ping,
-      Pong,
-      KeyringError: KeyringError,
-    };
+constructor {
+  New : ();
+};
 
-    constructor {
-      New : ();
-    };
-
-    service KeyringService {
-      BindKeyringDataToUserAddress : (user_address: actor_id, keyring_data: KeyringData) -> KeyringEvent;
-      BindKeyringDataToUserCodedName : (user_coded_name: str, keyring_data: KeyringData) -> KeyringEvent;
-      query KeyringAccountData : (keyring_address: actor_id) -> KeyringQueryEvent;
-      query KeyringAddressFromUserAddress : (user_address: actor_id) -> KeyringQueryEvent;
-      query KeyringAddressFromUserCodedName : (user_coded_name: str) -> KeyringQueryEvent;
-    };
-
-    service Ping {
-      Ping : () -> PingEvent;
-      PingNoWallet : (user_coded_name: str) -> PingEvent;
-      PingSignless : (user_address: actor_id) -> PingEvent;
-      Pong : () -> PingEvent;
-      PongNoWallet : (user_coded_name: str) -> PingEvent;
-      PongSignless : (user_address: actor_id) -> PingEvent;
-      query LastCaller : () -> actor_id;
-    };
-  `
+service Service {
+  Login : (wallet: actor_id) -> null;
+  RegisterUser : (name: str, role: str, gender: str, country: str) -> null;
+  SubmitProposal : (wallet: actor_id, title: str, description: str, objectives: str, plan: str, budget: u64, impact: str) -> Events;
+  query Query : () -> IoState;
+  query QueryAdmins : () -> vec actor_id;
+  query QueryAllProposals : () -> vec struct { actor_id, Proposal };
+  query QueryAllUsers : () -> vec User;
+};`
 };

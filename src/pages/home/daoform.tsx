@@ -5,7 +5,6 @@ import {
   Heading,
   Text,
   Button,
-  Image,
   VStack,
   HStack,
   Modal,
@@ -21,17 +20,27 @@ import {
   Select,
   useDisclosure,
   useToast,
+  Avatar,
+  Divider,
+  Spacer,
 } from "@chakra-ui/react";
-import { FaUserPlus, FaArrowCircleUp } from "react-icons/fa";
+import {
+  FaUserPlus,
+  FaArrowCircleUp,
+  FaHome,
+  FaComments,
+  FaVoteYea,
+  FaCoins,
+  FaGavel,
+} from "react-icons/fa";
 import { useAccount, useAlert } from "@gear-js/react-hooks";
 import { useSailsCalls } from "@/app/hooks";
 import { web3FromSource } from "@polkadot/extension-dapp";
 import { CONTRACT_DATA } from "@/app/consts";
 import { useSailsConfig } from "@/app/hooks/useSailsConfig";
-
+import { Proposals } from "./porpuesta";
 /**
  * Servicios que utilizaremos.
- * Cada objeto indica el "label" del servicio y los parámetros que va a requerir.
  */
 const services = [
   { label: "RegisterUser", params: ["name", "role", "gender", "country"] },
@@ -49,10 +58,10 @@ const services = [
   },
 ];
 
-function Landing() {
+function SailsComponent() {
   const toast = useToast();
 
-  // Para controlar los formularios en Modal:
+  // Control de modales
   const {
     isOpen: isRegisterOpen,
     onOpen: onRegisterOpen,
@@ -65,20 +74,19 @@ function Landing() {
     onClose: onProposalClose,
   } = useDisclosure();
 
-  // Guarda el tipo de servicio que se está llamando (RegisterUser o SubmitProposal)
+  // Guarda el tipo de servicio actual (RegisterUser o SubmitProposal)
   const [currentService, setCurrentService] = useState("");
-  // Guarda los valores de los campos del formulario
+  // Guarda los valores de los formularios
   const [formData, setFormData] = useState({});
-
-  // Estado para mostrar información de la llamada
+  // Guarda la info de un blockhash
   const [blockhash, setBlockhash] = useState("");
 
-  // Hooks para la cuenta de Polkadot.js y para “Sails”
+  // Hooks de Polkadot.js + Sails
   const { account } = useAccount();
   const sails = useSailsCalls();
   const alert = useAlert();
 
-  // Configuración del contrato
+  // Config del contrato
   const sailsConfig = {
     network: "wss://testnet.vara.network",
     contractId: CONTRACT_DATA.programId,
@@ -87,7 +95,7 @@ function Landing() {
   useSailsConfig(sailsConfig);
 
   /**
-   * Maneja cambios en los inputs de los formularios
+   * Manejo de los inputs
    */
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -95,33 +103,29 @@ function Landing() {
   };
 
   /**
-   * Envía la transacción al contrato usando sails.command()
+   * Ejecución de la transacción
    */
   const handleSubmit = async () => {
     if (!currentService) {
       toast({
-        title: "Servicio no seleccionado.",
+        title: "Servicio no seleccionado",
         description: "Por favor, selecciona un servicio.",
         status: "error",
       });
       return;
     }
 
-    // Filtra el servicio actual y obtiene los parámetros que requiere
     const serviceDef = services.find((s) => s.label === currentService);
     if (!serviceDef) return;
 
-    // Preparamos los argumentos del call basándonos en la definición
+    // Preparar argumentos
     const callArguments = serviceDef.params.map((param) => {
-      // Para el campo 'budget', convertimos a número
       if (param === "budget") {
         return Number(formData[param]) || 0;
       }
-      // En caso contrario lo devolvemos como string
       return String(formData[param] || "");
     });
 
-    // Mostramos un toast con info
     toast({
       title: `Ejecutando ${currentService}`,
       description: `Parámetros: ${JSON.stringify(callArguments)}`,
@@ -143,36 +147,11 @@ function Landing() {
     const { signer } = await web3FromSource(account.meta.source);
 
     try {
-      await sails.command(
+      await sails.query(
         `Service/${currentService}`,
         {
-          userAddress: account.decodedAddress,
-          signer,
-        },
-        {
-          callArguments,
-          callbacks: {
-            onBlock: (blockHash) => {
-              setBlockhash(blockHash);
-            },
-            onSuccess: () => {
-              toast({
-                title: "Operación exitosa",
-                status: "success",
-                duration: 4000,
-                isClosable: true,
-              });
-              // Cierra el modal correspondiente
-              currentService === "RegisterUser"
-                ? onRegisterClose()
-                : onProposalClose();
-              // Limpia el formulario
-              setFormData({});
-            },
-            onError: () => {
-              alert.error("Ocurrió un error en la transacción.");
-            },
-          },
+          userId: account.decodedAddress,
+          
         }
       );
     } catch (e) {
@@ -182,7 +161,7 @@ function Landing() {
   };
 
   /**
-   * Abre el modal de "Crear cuenta"
+   * Abre el modal de registro
    */
   const openRegisterModal = () => {
     setCurrentService("RegisterUser");
@@ -191,139 +170,224 @@ function Landing() {
   };
 
   /**
-   * Abre el modal de "Subir propuesta"
+   * Abre el modal para subir propuestas
    */
   const openProposalModal = () => {
     setCurrentService("SubmitProposal");
-    // El campo "wallet" podría ser la dirección actual, si lo deseas
     setFormData({ wallet: account?.decodedAddress || "" });
     onProposalOpen();
   };
 
   return (
-    <Box bgGradient="linear(to-b, #1c3b5f, #2a3f3b)" minH="100vh">
-      {/** Barra de navegación superior */}
-      <Flex
-        as="nav"
-        bg="rgba(0,0,0,0.2)"
-        py={4}
-        px={8}
-        justify="space-between"
-        align="center"
-      >
-        <HStack spacing={8}>
-          <Image
-            src="https://www.sanidadexpress.com/v2.png"
-            alt="VaraDAO logo"
-            boxSize="40px"
-            objectFit="cover"
-          />
-          <Heading size="lg" color="white">
+    <Flex minH="100vh" bg="#2f3f3b" color="white">
+      {/* SIDEBAR IZQUIERDO */}
+      <Box bg="#1A1E1B" w="250px" p={4} display="flex" flexDir="column">
+        <Box mb={8}>
+          <Heading size="md" mb={2}>
             VaraDAO
           </Heading>
-        </HStack>
-        <HStack spacing={6} color="gray.100">
-          <Text cursor="pointer">HOME</Text>
-          <Text cursor="pointer">ABOUT</Text>
-          <Text cursor="pointer"><b style={{color: "#f7a800"}}>100 gVARA</b></Text>
+          <Text fontSize="sm" opacity={0.8}>
+            Decentralizing Power
+          </Text>
+        </Box>
+
+        {/* Menú de opciones */}
+        <VStack align="stretch" spacing={4}>
+          <HStack cursor="pointer">
+            <FaHome />
+            <Text>Home</Text>
+          </HStack>
+
+          <HStack cursor="pointer">
+            <FaComments />
+            <Text>Discussions</Text>
+          </HStack>
+
+          <HStack cursor="pointer">
+            <FaGavel />
+            <Text>Governanza</Text>
+          </HStack>
+
+          <HStack cursor="pointer">
+            <FaVoteYea />
+            <Text>Voting</Text>
+          </HStack>
+
+          <HStack cursor="pointer">
+            <FaCoins />
+            <Text>Treasury</Text>
+          </HStack>
+        </VStack>
+
+        <Spacer />
+
+        {/* Ranking de contribuciones */}
+        <Box
+          bg="#39B88B"
+          p={3}
+          borderRadius="md"
+          textAlign="center"
+          color="black"
+        >
+          <Heading size="xs">RANKING OF CONTRIBUTIONS</Heading>
+          <Text fontSize="xs" mt={1}>
+            What is contribution ranking?
+          </Text>
+          <Text fontSize="xs" fontWeight="bold" mt={1} cursor="pointer">
+            &gt;&gt;&gt;
+          </Text>
+        </Box><Proposals/>
+      </Box>
+
+      {/* SECCIÓN CENTRAL */}
+      <Box flex="1" p={6}>
+        {/* Encabezado con botón "About us", etc. */}
+        <HStack justifyContent="space-between">
           <Button
+            bg="gray.600"
             color="white"
-            bg="green.400"
-            _hover={{ bg: "green.300" }}
-            onClick={openRegisterModal}
+            _hover={{ bg: "gray.500" }}
+            onClick={() => alert.info("Información de la DAO")}
           >
-            Register
+            About us
           </Button>
+
+          {/* Botón para abrir modal de registro (ej. Iniciar Session / Registrar) */}
+          <HStack spacing={4}>
+            <Avatar
+              size="sm"
+              name="User avatar"
+              src="https://bit.ly/broken-link"
+            />
+            <Button
+              size="sm"
+              bg="#39B88B"
+              color="black"
+              onClick={openRegisterModal}
+            >
+              Register
+            </Button>
+          </HStack>
         </HStack>
-      </Flex>
 
-      {/** Sección principal (hero) */}
-      <VStack spacing={6} py={10} px={8} textAlign="center">
-        <Heading size="2xl" color="white">
-          Decentralizing Power, Empowering Communities
-        </Heading>
-        <Text color="white" maxW="600px">
-        Welcome to the community management and proposal platform. Explore, register your account and submit your ideas to drive technological change.
-        </Text>
+        <Divider my={4} />
 
-        {/** Aquí podrías colocar imágenes alusivas a "Proposals" y "Leaders" */}
-        <HStack spacing={6} mt={8}>
-          <Box
-            w="200px"
-            h="250px"
-            bg="white"
-            borderRadius="md"
-            boxShadow="lg"
-            overflow="hidden"
-            textAlign="center"
-            cursor="pointer"
-            onClick={openProposalModal}
-          >
-            <Image
-              src="https://www.sanidadexpress.com/img1.jpeg"
-              alt="Proposals"
-              objectFit="cover"
-              w="100%"
-              h="70%"
-            />
-            <Text fontWeight="bold" p={2}>
-              PROPOSALS
+        {/* Tarjeta Income & Spending */}
+        <Flex bg="gray.800" p={4} borderRadius="md" align="center" mb={4}>
+          <Heading size="md" flex="1">
+            Income & Spending
+          </Heading>
+          <HStack spacing={4}>
+            <Text color="green.300" fontWeight="bold">
+              +$6,000
             </Text>
-          </Box>
-          <Box
-            w="200px"
-            h="250px"
-            bg="white"
-            borderRadius="md"
-            boxShadow="lg"
-            overflow="hidden"
-            textAlign="center"
-            cursor="pointer"
-            onClick={openProposalModal}
-          >
-            <Image
-              src="https://www.sanidadexpress.com/img1.jpeg"
-              alt="Proposals"
-              objectFit="cover"
-              w="100%"
-              h="70%"
-            />
-            <Text fontWeight="bold" p={2}>
-              MY PROPOSALS
+            <Text color="red.400" fontWeight="bold">
+              -$2,000
             </Text>
-          </Box>
-          <Box
-            w="200px"
-            h="250px"
-            bg="white"
-            borderRadius="md"
-            boxShadow="lg"
-            overflow="hidden"
-            textAlign="center"
-          >
-            <Image
-              src="https://www.sanidadexpress.com/img2.jpeg"
-              alt="Leaders"
-              objectFit="cover"
-              w="100%"
-              h="70%"
-            />
-            <Text fontWeight="bold" p={2}>
-              LEADERS
-            </Text>
-          </Box>
-          
-        </HStack>
-      </VStack>
+          </HStack>
+          <Button variant="ghost" color="whiteAlpha.700" ml={3}>
+            ...
+          </Button>
+        </Flex>
 
-      {/**
-       * ======================================
-       * MODAL para "RegisterUser"
-       * ======================================
-       */}
+        {/* MIS PROPUESTAS */}
+        <Box bg="gray.800" p={4} borderRadius="md">
+          <Heading size="md" mb={4}>
+            My proposals
+          </Heading>
+          {/* Ejemplo de "última propuesta" o alguna data estática */}
+          <Box>
+            <Text fontWeight="bold">Título</Text>
+            <Text mb={2}>Propuesta de Bountie para Workshop</Text>
+
+            <Text fontWeight="bold">Descripción</Text>
+            <Text mb={2}>
+              El workshop se desarrollará en la universidad latina de MX
+            </Text>
+
+            <Text fontWeight="bold">Objetivos</Text>
+            <Text mb={2}>
+              Onboardear a los chicos de tecnología para aplicar herramientas
+              Web3
+            </Text>
+
+            <Text fontWeight="bold">Plan</Text>
+            <Text mb={2}>Tener un temario de 2 hrs</Text>
+
+            <Text fontWeight="bold">Budget $</Text>
+            <Text mb={2}>600</Text>
+
+            <Text fontWeight="bold">Impact</Text>
+            <Text mb={2}>
+              30 nuevos universitarios onboardeados y posibles nuevos proyectos
+            </Text>
+
+            <Button
+              mt={3}
+              size="sm"
+              bg="#39B88B"
+              color="black"
+              _hover={{ bg: "#2f9c77" }}
+              onClick={openProposalModal}
+              leftIcon={<FaArrowCircleUp />}
+            >
+              Submit new proposal
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* SECCIÓN DERECHA (TREASURY, Approved proposals) */}
+      <Box w="300px" p={4}>
+        {/* Treasury Card */}
+        <Box
+          bg="#39B88B"
+          borderRadius="md"
+          p={4}
+          mb={4}
+          color="black"
+          boxShadow="xl"
+        >
+          <Text fontWeight="bold" fontSize="lg">
+            TREASURY
+          </Text>
+          <Text fontSize="3xl" fontWeight="bold">
+            $3,000
+          </Text>
+          <Text>~$ 102,57 millones</Text>
+          <Button variant="link" color="blue.800" mt={2}>
+            Details
+          </Button>
+        </Box>
+
+        {/* Approved proposals */}
+        <Box
+          bg="gray.800"
+          borderRadius="md"
+          p={4}
+          color="white"
+          boxShadow="xl"
+        >
+          <Heading size="sm" mb={2}>
+            Approved proposals
+          </Heading>
+          <VStack align="start" spacing={2} fontSize="sm">
+            <Text>Educación UNI - 14 dic 2024</Text>
+            <Text>DeFi - 9 ene 2025</Text>
+            <Text>Metaverse - 28 oct 2024</Text>
+            <Text>Otro - 13 oct 2024</Text>
+            <Text>Otro - 15 sep 2024</Text>
+          </VStack>
+          <Button variant="ghost" color="whiteAlpha.700" size="xs" mt={2}>
+            ...
+          </Button>
+        </Box>
+      </Box>
+
+      {/** =================== MODAL REGISTER USER =================== */}
       <Modal isOpen={isRegisterOpen} onClose={onRegisterClose}>
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent bg="#2f3f3b" color="white">
           <ModalHeader>
             <HStack>
               <FaUserPlus />
@@ -339,16 +403,20 @@ function Landing() {
                 name="name"
                 value={formData.name || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               />
             </FormControl>
 
             <FormControl mb={3}>
               <FormLabel>Rol</FormLabel>
               <Input
-                placeholder="Ej: Dev / MKT / Proj Manager / ..."
+                placeholder="Ej: Dev / MKT / ..."
                 name="role"
                 value={formData.role || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               />
             </FormControl>
 
@@ -359,6 +427,8 @@ function Landing() {
                 name="gender"
                 value={formData.gender || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               >
                 <option value="Female">Female</option>
                 <option value="Male">Male</option>
@@ -373,6 +443,8 @@ function Landing() {
                 name="country"
                 value={formData.country || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               >
                 <option value="Mexico">México</option>
                 <option value="Argentina">Argentina</option>
@@ -384,11 +456,13 @@ function Landing() {
             </FormControl>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onRegisterClose}>
+            <Button variant="outline" mr={3} onClick={onRegisterClose}>
               Cancelar
             </Button>
             <Button
-              colorScheme="teal"
+              bg="#39B88B"
+              color="black"
+              _hover={{ bg: "#2f9c77" }}
               onClick={handleSubmit}
             >
               Registrar
@@ -397,14 +471,10 @@ function Landing() {
         </ModalContent>
       </Modal>
 
-      {/**
-       * ======================================
-       * MODAL para "SubmitProposal"
-       * ======================================
-       */}
+      {/** =================== MODAL SUBMIT PROPOSAL =================== */}
       <Modal isOpen={isProposalOpen} onClose={onProposalClose}>
         <ModalOverlay />
-        <ModalContent>
+        <ModalContent bg="#2f3f3b" color="white">
           <ModalHeader>
             <HStack>
               <FaArrowCircleUp />
@@ -413,13 +483,14 @@ function Landing() {
           </ModalHeader>
           <ModalCloseButton />
           <ModalBody>
-            {/** Si deseas que el usuario ingrese la wallet manual, quita el "readOnly" */}
             <FormControl mb={3}>
               <FormLabel>Wallet</FormLabel>
               <Input
                 name="wallet"
                 value={formData.wallet || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
                 readOnly
               />
             </FormControl>
@@ -431,16 +502,20 @@ function Landing() {
                 name="title"
                 value={formData.title || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               />
             </FormControl>
 
             <FormControl mb={3}>
               <FormLabel>Descripción</FormLabel>
               <Input
-                placeholder="Descripción corta de la propuesta"
+                placeholder="Breve descripción"
                 name="description"
                 value={formData.description || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               />
             </FormControl>
 
@@ -451,6 +526,8 @@ function Landing() {
                 name="objectives"
                 value={formData.objectives || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               />
             </FormControl>
 
@@ -461,6 +538,8 @@ function Landing() {
                 name="plan"
                 value={formData.plan || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               />
             </FormControl>
 
@@ -471,6 +550,8 @@ function Landing() {
                 name="budget"
                 value={formData.budget || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               />
             </FormControl>
 
@@ -481,15 +562,19 @@ function Landing() {
                 name="impact"
                 value={formData.impact || ""}
                 onChange={handleInputChange}
+                bg="white"
+                color="black"
               />
             </FormControl>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onProposalClose}>
+            <Button variant="outline" mr={3} onClick={onProposalClose}>
               Cancelar
             </Button>
             <Button
-              colorScheme="teal"
+              bg="#39B88B"
+              color="black"
+              _hover={{ bg: "#2f9c77" }}
               onClick={handleSubmit}
             >
               Subir
@@ -497,8 +582,10 @@ function Landing() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </Box>
+    </Flex>
   );
+
+
 }
 
-export { Landing };
+export { SailsComponent };
